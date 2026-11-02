@@ -1,0 +1,19 @@
+
+pipeline:
+  stages:
+    - name: Build and Test
+      id: Build_and_Test
+      steps:
+        - run:
+            script: |
+              echo "Checking Java version"
+              java -version
+
+              echo "Checking Maven version"
+              ./mvnw -version
+
+              echo "Building Shopizer application"
+              chmod +x ./mvnw
+              ./mvnw -B clean install
+          name: Build Shopizer
+          id: Build_Shopizer
