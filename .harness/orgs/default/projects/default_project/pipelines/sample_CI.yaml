@@ -4,16 +4,34 @@ pipeline:
     - name: Build and Test
       id: Build_and_Test
       steps:
-        - run:
+        - name: Build Shopizer
+          id: Build_Shopizer
+          run:
             script: |
-              echo "Checking Java version"
+              echo "========== JAVA VERSION =========="
               java -version
 
-              echo "Checking Maven version"
+              echo "========== LOCATING MAVEN WRAPPER =========="
+              WRAPPER_PATH=$(find . -type f -name mvnw -print -quit)
+
+              if [ -z "$WRAPPER_PATH" ]; then
+                echo "ERROR: Maven wrapper not found!"
+                echo "Current directory:"
+                pwd
+                ls -la
+                exit 1
+              fi
+
+              PROJECT_DIR=$(dirname "$WRAPPER_PATH")
+              echo "Maven wrapper found at: $PROJECT_DIR"
+
+              cd "$PROJECT_DIR"
+
+              echo "========== MAVEN VERSION =========="
+              chmod +x mvnw
               ./mvnw -version
 
-              echo "Building Shopizer application"
-              chmod +x ./mvnw
+              echo "========== BUILDING SHOPIZER =========="
               ./mvnw -B clean install
-          name: Build Shopizer
-          id: Build_Shopizer
+
+              echo "========== BUILD COMPLETED =========="
