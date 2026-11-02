@@ -1,36 +1,130 @@
+
 pipeline:
   stages:
     - name: Build and Test
       id: Build_and_Test
+
       steps:
-        - name: Build Shopizer
-          id: Build_Shopizer
+
+        # STEP 1: Verify repository checkout
+        - name: Verify GitHub Checkout
+          id: Verify_GitHub_Checkout
+
           run:
             script: |
-              echo "========== JAVA VERSION =========="
-              java -version
+              set -e
 
-              echo "========== LOCATING MAVEN WRAPPER =========="
-              WRAPPER_PATH=$(find . -type f -name mvnw -print -quit)
+              echo "===================================="
+              echo "       REPOSITORY CHECKOUT"
+              echo "===================================="
+
+              echo "Current directory:"
+              pwd
+
+              echo ""
+              echo "Directory contents:"
+              ls -la
+
+              echo ""
+              echo "Checking source code..."
+
+              if [ ! -d "/harness" ]; then
+                echo "ERROR: /harness directory does not exist!"
+                exit 1
+              fi
+
+              WRAPPER_PATH=$(find /harness \
+                -type f \
+                -name mvnw \
+                -print -quit)
 
               if [ -z "$WRAPPER_PATH" ]; then
                 echo "ERROR: Maven wrapper not found!"
-                echo "Current directory:"
-                pwd
-                ls -la
+                echo "Repository may not have been cloned."
+
+                echo "Available files:"
+                find /harness -maxdepth 3 -type f | head -100
+
+                exit 1
+              fi
+
+              echo "Maven wrapper found:"
+              echo "$WRAPPER_PATH"
+
+              PROJECT_DIR=$(dirname "$WRAPPER_PATH")
+
+              if [ ! -f "$PROJECT_DIR/pom.xml" ]; then
+                echo "ERROR: pom.xml not found in $PROJECT_DIR"
+                exit 1
+              fi
+
+              echo "Repository checkout verified successfully!"
+
+
+        # STEP 2: Verify Java
+        - name: Verify Java Environment
+          id: Verify_Java
+
+          run:
+            script: |
+              set -e
+
+              echo "===================================="
+              echo "          JAVA VERSION"
+              echo "===================================="
+
+              java -version
+
+              echo ""
+              echo "JAVA_HOME:"
+              echo "$JAVA_HOME"
+
+
+        # STEP 3: Build Shopizer
+        - name: Build Shopizer
+          id: Build_Shopizer
+
+          run:
+            script: |
+              set -e
+
+              echo "===================================="
+              echo "       LOCATING MAVEN WRAPPER"
+              echo "===================================="
+
+              WRAPPER_PATH=$(find /harness \
+                -type f \
+                -name mvnw \
+                -print -quit)
+
+              if [ -z "$WRAPPER_PATH" ]; then
+                echo "ERROR: Maven wrapper not found!"
                 exit 1
               fi
 
               PROJECT_DIR=$(dirname "$WRAPPER_PATH")
-              echo "Maven wrapper found at: $PROJECT_DIR"
+
+              echo "Project directory: $PROJECT_DIR"
 
               cd "$PROJECT_DIR"
 
-              echo "========== MAVEN VERSION =========="
+              echo ""
+              echo "===================================="
+              echo "          MAVEN VERSION"
+              echo "===================================="
+
               chmod +x mvnw
+
               ./mvnw -version
 
-              echo "========== BUILDING SHOPIZER =========="
+              echo ""
+              echo "===================================="
+              echo "       BUILDING SHOPIZER"
+              echo "===================================="
+
               ./mvnw -B clean install
 
-              echo "========== BUILD COMPLETED =========="
+              echo ""
+              echo "===================================="
+              echo "       BUILD COMPLETED"
+              echo "===================================="
